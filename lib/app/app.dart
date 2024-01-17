@@ -1,17 +1,9 @@
-import 'package:jolly_pairs/app/app_injector.dart';
-import 'package:jolly_pairs/app/app_localizations.dart';
-import 'package:jolly_pairs/app/app_reporter.dart';
-import 'package:jolly_pairs/app/app_routing.dart';
-import 'package:jolly_pairs/app/state/firebase/firebase_state.dart';
-import 'package:jolly_pairs/app/state/initialization/initialization_state.dart';
-import 'package:jolly_pairs/app/state/precache/image_precache_state.dart';
-import 'package:jolly_pairs/app/widget/app_global_error_dialog.dart';
-import 'package:jolly_pairs/common/constant/app_theme.dart';
-import 'package:jolly_pairs/util/hook/use_async_stream_subscription.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:provider/single_child_widget.dart';
+import 'package:jolly_pairs/app/app_reporter.dart';
+import 'package:jolly_pairs/app/app_routing.dart';
+import 'package:jolly_pairs/app/widget/app_global_error_dialog.dart';
+import 'package:jolly_pairs/util/hook/use_async_stream_subscription.dart';
 import 'package:utopia_arch/utopia_arch.dart';
 import 'package:utopia_hooks/utopia_hooks.dart';
 import 'package:utopia_utils/utopia_utils.dart';
@@ -34,16 +26,13 @@ class App extends HookWidget {
 
     return _buildApp(
       navigatorKey: navigatorKey,
-      builder: (context, child) => MultiProvider(
-        providers: _buildProviders(navigatorKey),
-        child: HookBuilder(builder: (context) {
-          useAsyncStreamSubscription<UiGlobalError>(
-            uiErrors,
-            (error) async => _handleUiError(context, error, navigatorKey.currentState!),
-          );
-          return child;
-        }),
-      ),
+      builder: (context, child) => HookBuilder(builder: (context) {
+        useAsyncStreamSubscription<UiGlobalError>(
+          uiErrors,
+          (error) async => _handleUiError(context, error, navigatorKey.currentState!),
+        );
+        return child;
+      }),
     );
   }
 
@@ -53,7 +42,6 @@ class App extends HookWidget {
   }) {
     return MaterialApp(
       // theming
-      theme: appTheme,
       scrollBehavior: const MaterialScrollBehavior().copyWith(physics: const BouncingScrollPhysics()),
       // navigation
       navigatorKey: navigatorKey,
@@ -63,25 +51,13 @@ class App extends HookWidget {
       initialRoute: AppRouting.initialRoute,
       // localization
       localizationsDelegates: const [
-        AppLocalizationsDelegate(),
         DefaultMaterialLocalizations.delegate,
         DefaultCupertinoLocalizations.delegate,
       ],
-      supportedLocales: localizedLabels.keys,
       // other
       debugShowCheckedModeBanner: false,
       builder: (context, child) => builder(context, child!),
     );
-  }
-
-  List<SingleChildWidget> _buildProviders(GlobalKey<NavigatorState> navigatorKey) {
-    return [
-      Provider.value(value: navigatorKey),
-      Provider(create: (context) => AppInjector.setup()),
-      const HookStateProvider(useFirebaseState),
-      const HookStateProvider(useImagePrecacheState),
-      const HookStateProvider(useInitializationState),
-    ];
   }
 
   Future<void> _handleUiError(BuildContext context, UiGlobalError error, NavigatorState navigator) async {
